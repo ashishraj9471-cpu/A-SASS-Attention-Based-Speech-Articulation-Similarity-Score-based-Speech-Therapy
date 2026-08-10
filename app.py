@@ -146,7 +146,7 @@ def transcribe(model, audio_path: str, lang: str, temp_dir: str) -> dict:
 # WHISPER MODEL
 # =====================================================
 
-WHISPER_MODEL_OPTIONS = {
+AVSR_MODEL_OPTIONS = {
     "medium (recommended for Hindi)": "medium",
     "small (faster, less accurate)": "small",
     "large-v2 (best accuracy, slow)": "large-v2",
