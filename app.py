@@ -146,7 +146,7 @@ def transcribe(model, audio_path: str, lang: str, temp_dir: str) -> dict:
 # AVSR MODEL
 # =====================================================
 
-AVSR_MODEL_OPTIONS = {
+WHISPER_MODEL_OPTIONS = {
     "medium (recommended for Hindi)": "medium",
     "small (faster, less accurate)": "small",
     "large-v2 (best accuracy, slow)": "large-v2",
@@ -175,7 +175,7 @@ with c2:
 
 with c3:
     selected_model_label = st.selectbox(
-        "🤖 Whisper Model",
+        "🤖 AVSR Model",
         list(WHISPER_MODEL_OPTIONS.keys()),
         index=0,
         help="'base' gives wrong Hindi results. Use medium or large-v2."
