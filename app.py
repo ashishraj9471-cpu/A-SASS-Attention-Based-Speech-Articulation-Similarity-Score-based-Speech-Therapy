@@ -143,7 +143,7 @@ def transcribe(model, audio_path: str, lang: str, temp_dir: str) -> dict:
     }
 
 # =====================================================
-# WHISPER MODEL
+# AVSR MODEL
 # =====================================================
 
 AVSR_MODEL_OPTIONS = {
