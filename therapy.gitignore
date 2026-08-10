@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# VS Code
+.vscode/
+
+# Environment variables / secrets
+.env
+*.env
+
+# Audio / video patient data
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Patient/session data
+therapy_sessions.csv
+
+# Generated files
+outputs/
+results/
+temp/
+tmp/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.onnx
