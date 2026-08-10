@@ -41,6 +41,7 @@ git clone https://github.com/ashishraj9471-cpu/A-SASS-Attention-Based-Speech-Art
 
 cd A-SASS-Attention-Based-Speech-Articulation-Similarity-Score-based-Speech-Therapy
 
-python -m venv venv ```
+python -m venv venv
+ ```
 
-then hit on therapy_setup.bat
+then hit on therapy_setup.bat to start the setup and the streamlit file will open by itself.
