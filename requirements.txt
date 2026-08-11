@@ -1,35 +1,52 @@
 # =====================================================
-# A-SASS Speech Therapy — Requirements
+# A-SASS Speech Therapy System
+# Final Requirements
 # =====================================================
 
-# Core
+# -----------------------------
+# Core Application
+# -----------------------------
 streamlit>=1.28.0
 numpy>=1.24.0
 pandas>=2.0.0
 pillow>=10.0.0
+pillow-heif>=0.13.0
 
-# Audio / Speech
+# -----------------------------
+# Audio / Speech Processing
+# -----------------------------
 openai-whisper>=20231117
+imageio-ffmpeg>=0.6.0
 librosa>=0.10.0
 soundfile>=0.12.0
 jiwer>=3.0.0
 
-# Video / Face
+# -----------------------------
+# Video / Face Analysis
+# -----------------------------
 opencv-python>=4.8.0
 mediapipe==0.10.8
 
-# Face comparison (DTW)
+# -----------------------------
+# Face Comparison / DTW
+# -----------------------------
 fastdtw>=0.3.4
 
-# ML Backend
+# -----------------------------
+# Machine Learning
+# -----------------------------
 torch>=2.0.0
 torchaudio>=2.0.0
 
+# -----------------------------
 # Visualization
+# -----------------------------
 plotly>=5.15.0
 matplotlib>=3.7.0
 
-# Utilities
+# -----------------------------
+# Scientific / ML Utilities
+# -----------------------------
 scipy>=1.10.0
 scikit-learn>=1.3.0
 tqdm>=4.65.0
