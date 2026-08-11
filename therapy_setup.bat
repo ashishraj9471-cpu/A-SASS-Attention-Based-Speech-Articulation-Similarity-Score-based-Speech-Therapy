@@ -1,5 +1,5 @@
 @echo off
-chcp 65001 >nul
+setlocal enabledelayedexpansion
 title A-SASS Speech Therapy Launcher
 cls
 
@@ -8,118 +8,134 @@ echo   A-SASS Speech Therapy System
 echo ============================================
 echo.
 
-:: --- 1. Check Python ---
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Python not found in PATH.
-    echo Install from python.org and check "Add Python to PATH"
-    pause
-    exit /b 1
-)
-echo [OK] Python 3 found.
-
-:: --- 2. Paths (quoted for spaces) ---
 set "SCRIPT_DIR=%~dp0"
 set "VENV_DIR=%SCRIPT_DIR%venv"
 set "APP_FILE=%SCRIPT_DIR%app.py"
 set "REQ_FILE=%SCRIPT_DIR%requirements.txt"
 
-:: --- 3. Check app.py ---
+:: --- 1. Check Python 3.10 / 3.11 ---
+echo [+] Checking Python installation...
+
+set "PYTHON_EXE="
+
+py -3.11 --version >nul 2>&1
+if !errorlevel! equ 0 set "PYTHON_EXE=py -3.11"
+
+if not defined PYTHON_EXE (
+    py -3.10 --version >nul 2>&1
+    if !errorlevel! equ 0 set "PYTHON_EXE=py -3.10"
+)
+
+if not defined PYTHON_EXE (
+    python --version >nul 2>&1
+    if !errorlevel! equ 0 (
+        for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set "PY_VER=%%v"
+        echo !PY_VER! | findstr /R "^3\.10\." >nul && set "PYTHON_EXE=python"
+        echo !PY_VER! | findstr /R "^3\.11\." >nul && set "PYTHON_EXE=python"
+    )
+)
+
+if defined PYTHON_EXE goto :PYTHON_FOUND
+
+echo [!] Python 3.10 or 3.11 not found on system.
+echo [+] Downloading Python 3.11.9 (64-bit)...
+
+set "PY_INSTALLER=%TEMP%\python-3.11.9-amd64.exe"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile '%PY_INSTALLER%' } catch { exit 1 }"
+
+if not exist "%PY_INSTALLER%" (
+    echo [ERROR] Failed to download Python installer. Check internet connection.
+    goto :PAUSE_EXIT
+)
+
+echo [+] Installing Python 3.11.9 silently...
+start /wait "" "%PY_INSTALLER%" /quiet InstallAllUsers=0 PrependPath=1 Include_test=0 Include_pip=1
+del /f /q "%PY_INSTALLER%" >nul 2>&1
+
+set "PATH=%LocalAppData%\Programs\Python\Python311;%LocalAppData%\Programs\Python\Python311\Scripts;%PATH%"
+
+py -3.11 --version >nul 2>&1
+if !errorlevel! equ 0 set "PYTHON_EXE=py -3.11"
+
+if not defined PYTHON_EXE (
+    python --version >nul 2>&1
+    if !errorlevel! equ 0 set "PYTHON_EXE=python"
+)
+
+if not defined PYTHON_EXE (
+    echo [ERROR] Python installation completed but could not be detected in PATH.
+    goto :PAUSE_EXIT
+)
+
+:PYTHON_FOUND
+echo [OK] Using Python: %PYTHON_EXE%
+
+:: --- 2. Check App Files ---
 if not exist "%APP_FILE%" (
-    echo [ERROR] app.py not found in: %SCRIPT_DIR%
-    pause
-    exit /b 1
+    echo [ERROR] app.py not found in directory: %SCRIPT_DIR%
+    goto :PAUSE_EXIT
 )
 echo [OK] app.py found.
 
-:: --- 4. KILL any python processes locking the venv ---
-echo [+] Cleaning up old processes...
+:: --- 3. Clean Running Processes ---
+echo [+] Cleaning up existing Python processes...
 taskkill /F /IM python.exe /T >nul 2>&1
 taskkill /F /IM pythonw.exe /T >nul 2>&1
 timeout /t 2 >nul
 
-:: --- 5. FORCE DELETE old venv if it exists ---
+:: --- 4. Virtual Environment Setup ---
 if exist "%VENV_DIR%" (
-    echo [!] Removing old venv folder...
-    rmdir /s /q "%VENV_DIR%" 2>nul
-    :: If rmdir failed (permission locked), try renaming
-    if exist "%VENV_DIR%" (
-        echo [!] Folder locked. Renaming instead...
-        ren "%VENV_DIR%" "venv_old_%random%" 2>nul
-        if exist "%VENV_DIR%" (
-            echo [ERROR] Cannot remove or rename venv.
-            echo Fix: Close all Python windows, then retry.
-            echo Or: Move this entire folder to Desktop and retry.
-            pause
-            exit /b 1
-        )
+    if not exist "%VENV_DIR%\Scripts\activate.bat" (
+        echo [!] Broken virtual environment detected. Cleaning up...
+        rmdir /s /q "%VENV_DIR%" 2>nul
     )
 )
 
-:: --- 6. Create fresh venv ---
-echo [+] Creating fresh virtual environment...
-python -m venv "%VENV_DIR%" --upgrade-deps
-if errorlevel 1 (
-    echo [ERROR] Failed to create venv.
-    echo Trying fallback: installing without venv...
-    goto :NO_VENV_FALLBACK
+if not exist "%VENV_DIR%" (
+    echo [+] Creating fresh virtual environment...
+    %PYTHON_EXE% -m venv "%VENV_DIR%"
+    if !errorlevel! neq 0 (
+        echo [ERROR] Failed to create virtual environment.
+        goto :PAUSE_EXIT
+    )
+    echo [OK] Virtual environment created.
 )
-echo [OK] venv created.
 
-:: --- 7. Activate venv ---
+echo [+] Activating virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
-if errorlevel 1 (
-    echo [ERROR] Failed to activate venv.
-    goto :NO_VENV_FALLBACK
+if !errorlevel! neq 0 (
+    echo [ERROR] Failed to activate virtual environment.
+    goto :PAUSE_EXIT
 )
-echo [OK] venv activated.
+echo [OK] Virtual environment activated.
 
-:: --- 8. Ensure pip works ---
+:: --- 5. Install Dependencies ---
 python -m ensurepip --upgrade >nul 2>&1
-python -m pip install --upgrade pip setuptools wheel -q
-if errorlevel 1 (
-    echo [WARNING] pip upgrade failed, continuing...
-)
+python -m pip install --upgrade pip setuptools wheel -q >nul 2>&1
 
-:: --- 9. Install requirements ---
-echo [+] Installing packages (first run: 5-15 minutes)...
-echo [i] This will download Whisper models (~1-3 GB)
+echo [+] Installing required packages...
+echo [i] First run downloads AI/Whisper dependencies (~5-15 mins)...
 python -m pip install -r "%REQ_FILE%"
-if errorlevel 1 (
-    echo [ERROR] Package install failed. Check internet connection.
-    pause
-    exit /b 1
+if !errorlevel! neq 0 (
+    echo [ERROR] Package installation failed. Please check internet connection.
+    goto :PAUSE_EXIT
 )
 echo [OK] All packages installed.
-goto :LAUNCH
 
-:: --- FALLBACK: No venv, install to user site ---
-:NO_VENV_FALLBACK
+:: --- 6. Launch App ---
 echo.
-echo [!] Falling back to system Python (no virtual environment)...
-python -m pip install --user -r "%REQ_FILE%"
-if errorlevel 1 (
-    echo [ERROR] Installation failed completely.
-    echo Please run this file as Administrator (Right-click ^> Run as administrator)
-    pause
-    exit /b 1
-)
-echo [OK] Packages installed to user profile.
-
-:: --- 10. Launch Streamlit ---
-:LAUNCH
-echo.
-echo [✓] Starting Streamlit...
-echo [i] Browser will open at http://localhost:8501
+echo [OK] Launching Streamlit interface...
+echo [i] Opening browser at http://localhost:8501
 echo ============================================
 echo.
 
-:: Open browser after delay
-start /b cmd /c "timeout /t 8 >nul && start http://localhost:8501"
-
-:: Run
+start /b cmd /c "timeout /t 6 >nul && start http://localhost:8501"
 streamlit run "%APP_FILE%" --server.headless=false
 
+:PAUSE_EXIT
 echo.
-echo [✓] Session ended. Press any key to close.
+echo ============================================
+echo Execution paused. Press any key to exit script.
+echo ============================================
 pause
